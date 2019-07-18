@@ -20,18 +20,28 @@
 #include <pcl/registration/transforms.h>
 
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/filters/extract_indices.h>
 
 using pcl::visualization::PointCloudColorHandlerGenericField;
 using pcl::visualization::PointCloudColorHandlerCustom;
+class SphereX
+{
+  public:
+	bool hop_status;
+	bool icp_status;
 
-//convenient typedefs
+	SphereX() : hop_status(false),icp_status(false){}
+
+};//convenient typedefs
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef pcl::PointNormal PointNormalT;
 typedef pcl::PointCloud<PointNormalT> PointCloudWithNormals;
+Eigen::Matrix4f GlobalTransform = Eigen::Matrix4f::Identity ();
+PointCloud::Ptr global_cloud (new PointCloud), cloud_inRadius (new PointCloud);
 std::ofstream pcdfile_write;
-int hopped = 0;
 int counter=0;
+SphereX hop;
 //std::ofstream pcdfile_read;
 void storefilename_callback(const std_msgs::String& pcd_file_name);
 // This is a tutorial so we can afford having global variables
@@ -95,8 +105,8 @@ void showCloudsLeft(const PointCloud::Ptr cloud_target, const PointCloud::Ptr cl
   p->addPointCloud (cloud_target, tgt_h, "vp1_target", vp_1);
   p->addPointCloud (cloud_source, src_h, "vp1_source", vp_1);
 
-  PCL_INFO ("Press q to begin the registration.\n");
-  p-> spin();
+  //PCL_INFO ("Press q to begin the registration.\n");
+  //p-> spin();
 }
 
 
@@ -299,7 +309,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   // Run the same optimization in a loop and visualize the results
   Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev, targetToSource;
   PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
-  reg.setMaximumIterations (2);
+  reg.setMaximumIterations (10);
   for (int i = 0; i < 10; ++i)
   {
     PCL_INFO ("Iteration Nr. %d.\n", i);
@@ -323,7 +333,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
     prev = reg.getLastIncrementalTransformation ();
 
     // visualize current state
-    showCloudsRight(points_with_normals_tgt, points_with_normals_src);
+    //showCloudsRight(points_with_normals_tgt, points_with_normals_src);
   }
 
 	//
@@ -343,7 +353,7 @@ void pairAlign (const PointCloud::Ptr cloud_src, const PointCloud::Ptr cloud_tgt
   p->addPointCloud (cloud_src, cloud_src_h, "source", vp_2);
 
 	PCL_INFO ("Press q to continue the registration.\n");
-  p->spin ();
+  //p->spin ();
 
   p->removePointCloud ("source");
   p->removePointCloud ("target");
@@ -369,7 +379,7 @@ int main (int argc, char** argv)
   {
       //ROS_INFO("%d", hopped);
 
-      if(hopped==1)
+      if(hop.hop_status==true)
       {
           ROS_INFO("in Hopped");
           //loadData (argc, argv, data);
@@ -390,7 +400,7 @@ int main (int argc, char** argv)
           p->createViewPort (0.5, 0, 1.0, 1.0, vp_2);
 
         	PointCloud::Ptr result (new PointCloud), source, target;
-          Eigen::Matrix4f GlobalTransform = Eigen::Matrix4f::Identity (), pairTransform;
+          Eigen::Matrix4f /*GlobalTransform = Eigen::Matrix4f::Identity (),*/ pairTransform;
 
           for (size_t i = 1; i < data.size (); ++i)
           {
@@ -398,26 +408,75 @@ int main (int argc, char** argv)
             target = data[i].cloud;
 
             // Add visualization data
-            showCloudsLeft(source, target);
+            //showCloudsLeft(source, target);
 
             PointCloud::Ptr temp (new PointCloud);
-            PCL_INFO ("Aligning %s (%d) with %s (%d).\n", data[i-1].f_name.c_str (), source->points.size (), data[i].f_name.c_str (), target->points.size ());
+            PCL_INFO ("Aligning %s (%d) with %s (%d).\n", data[i].f_name.c_str (), source->points.size (), data[i-1].f_name.c_str (), target->points.size ());
             pairAlign (source, target, temp, pairTransform, true);
 
-            //transform current pair into the global transform
-            pcl::transformPointCloud (*temp, *result, GlobalTransform);
-
-            //update the global transform
             GlobalTransform *= pairTransform;
 
-            //save aligned pair, transformed into the first cloud's frame
-            std::stringstream ss;
-            ss << i << ".pcd";
-            pcl::io::savePCDFile (ss.str (), *result, true);
 
-           }
+            pcl::transformPointCloud(*target, *result, GlobalTransform);
+
+
+            *global_cloud += *result;
+            //transform current pair into the global transform
+            //pcl::transformPointCloud (*temp, *result, GlobalTransform);
+
+            //update the global transform
+
+            std::cout << GlobalTransform << std::endl;
+
+            std::cout << "Now lets go to the local pairtransform" << std::endl;
+
+            std::cout << pairTransform << std::endl;
+
+
+
+            //save aligned pair, transformed into the first cloud's frame
+
+
+         }
+           std::stringstream ss;
+           ss << "1.pcd";
+           pcl::io::savePCDFile (ss.str (), *global_cloud, true);
            counter = 0;
+					 hop.icp_status = true;
+
+
+
        }
+			 if(hop.hop_status && hop.icp_status)
+			 {
+					 double x_ = GlobalTransform(0, 3);
+					 double y_ = GlobalTransform(1, 3);
+					 double z_ = GlobalTransform(2, 3);
+					 double r = 3;
+
+					 int number_of_indices = 70000 ;
+					 std::vector<float> k_radius(number_of_indices);
+					 std::vector<int> k_indices(number_of_indices);
+					 pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+		       kdtree.setInputCloud (global_cloud);
+					 pcl::PointXYZ searchPoint;
+					 searchPoint.x = x_;
+					 searchPoint.y = y_;
+					 searchPoint.z = z_;
+					 pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+					 kdtree.radiusSearch(searchPoint, r , k_indices, k_radius);
+					 inliers->indices = k_indices;
+					 pcl::ExtractIndices<pcl::PointXYZ> filter_pc ; // Initializing with true will allow us to extract the removed indices
+           filter_pc.setInputCloud(global_cloud);
+           filter_pc.setIndices(inliers);
+           filter_pc.filter(*cloud_inRadius);
+					 std::stringstream ss;
+           ss << "2.pcd";
+           pcl::io::savePCDFile (ss.str (), *cloud_inRadius, true);
+					 hop.icp_status = false;
+		   }
+
+
        ros::spinOnce();
    }
 
@@ -426,9 +485,10 @@ int main (int argc, char** argv)
 }
 void storefilename_callback(const std_msgs::String& pcd_file_name)
 {
-  if(hopped == 0)
+  if(!hop.hop_status && !hop.icp_status)
   {
   //ROS_INFO("SphereX Hopping");
+  if(counter % 2 == 0){
 	std::stringstream ss;
 	ss << pcd_file_name.data << ".pcd";
   ROS_INFO("%s",ss.str().c_str());
@@ -437,13 +497,14 @@ void storefilename_callback(const std_msgs::String& pcd_file_name)
 	pcdfile_write << ss.str()<<endl;
   //pcdfile_write << " Ye errorwa nahi samazh aa raha";
 	//pcdfile_write.close();
+  }
   counter++;
 
   }
-  else ROS_INFO("SphereX hopped %d", hopped);
-  if(counter >= 10)
+  else ROS_INFO("SphereX hopped");
+  if(counter >= 60)
   {
-    hopped=1;
+    hop.hop_status=true;
   }
-  else hopped = 0;
+  else hop.hop_status = false;
 }
