@@ -20,6 +20,7 @@
 #include <pcl/registration/transforms.h>
 
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
@@ -582,9 +583,10 @@ int main (int argc, char** argv)
 
            //plane_inliers_pointer.at(0) = outliers2;
            //plane_inliers_pointer[0] = outliers2;
-           cout << "Point Cloud " << 0 << "has got " << plane_inliers_pointer[2]->indices.size() << " Points" << endl;
+           /*cout << "Point Cloud " << 0 << "has got " << plane_inliers_pointer[2]->indices.size() << " Points" << endl;
            extract.setInputCloud(cloud_outPlane);
            extract.setIndices(plane_inliers_pointer[0]);
+           cout<<"Size of Cloud 1 "<<plane_inliers_pointer[0]->indices.size()<<endl;
            extract.setNegative(false);
            extract.filter(*cloud_plane_one);
            std::stringstream ss6;
@@ -592,47 +594,56 @@ int main (int argc, char** argv)
            pcl::io::savePCDFile (ss6.str (), *cloud_plane_one, true);
            PointCloud::Ptr cloud2 (new PointCloud), cloud3 (new PointCloud), cloud4 (new PointCloud), cloud5 (new PointCloud), cloud6 (new PointCloud), cloud7 (new PointCloud), cloud8 (new PointCloud);
            extract.setIndices(plane_inliers_pointer[1]);
+           cout<<"Size of Cloud 2 "<<plane_inliers_pointer[1]->indices.size()<<endl;
            extract.setNegative(false);
            extract.filter(*cloud2);
            std::stringstream ss7;
            ss7 << "7.pcd";
            pcl::io::savePCDFile (ss7.str (), *cloud2, true);
            extract.setIndices(plane_inliers_pointer[2]);
+           cout<<"Size of Cloud 3 "<<plane_inliers_pointer[2]->indices.size()<<endl;
            extract.setNegative(false);
            extract.filter(*cloud3);
            std::stringstream ss8;
            ss8 << "8.pcd";
            pcl::io::savePCDFile (ss8.str (), *cloud3, true);
            extract.setIndices(plane_inliers_pointer[3]);
+           cout<<"Size of Cloud 4 "<<plane_inliers_pointer[3]->indices.size()<<endl;
            extract.setNegative(false);
            extract.filter(*cloud4);
            std::stringstream ss9;
            ss9 << "9.pcd";
            pcl::io::savePCDFile (ss9.str (), *cloud4, true);
            extract.setIndices(plane_inliers_pointer[4]);
+           cout<<"Size of Cloud 5 "<<plane_inliers_pointer[4]->indices.size()<<endl;
            extract.setNegative(false);
            extract.filter(*cloud5);
            std::stringstream ss10;
            ss10 << "10.pcd";
            pcl::io::savePCDFile (ss10.str (), *cloud5, true);
            extract.setIndices(plane_inliers_pointer[5]);
+           cout<<"Size of Cloud 6 "<<plane_inliers_pointer[5]->indices.size()<<endl;
            extract.setNegative(false);
            extract.filter(*cloud6);
            std::stringstream ss11;
            ss11 << "11.pcd";
            pcl::io::savePCDFile (ss11.str (), *cloud6, true);
-           int numberOfSectors = 8;
+           */
+           int numberOfSectors = 24;
            int anglePerSector = 360/numberOfSectors;
            std::vector<Plane, Eigen::aligned_allocator<Plane> > Planes;
            //plane_segmenter end
-           for(int i = 0; i < planes_number; i++)
+           for(int m = 0; m < planes_number; m++)
            {
 
              PointCloud::Ptr cloud_ofPlane (new PointCloud);
              pcl::ExtractIndices<pcl::PointXYZ> extract_as_cloud (true);
              extract_as_cloud.setInputCloud(cloud_outPlane);
-             extract_as_cloud.setIndices(plane_inliers_pointer[i]);
-             extract.filter(*cloud_ofPlane);
+             extract_as_cloud.setIndices(plane_inliers_pointer[m]);
+             extract_as_cloud.setNegative(false);
+             extract_as_cloud.filter(*cloud_ofPlane);
+             cout<<"Size of Cloud  "<<m<<" "<<plane_inliers_pointer[m]->indices.size()<<endl;
+             cout<<"size of a cloud"<<cloud_ofPlane->points.size()<<endl;
              std::vector<Sector, Eigen::aligned_allocator<Sector>> sectors;
              int sector_number_array[numberOfSectors];
              for(int k=0; k <= numberOfSectors; k++)
@@ -647,13 +658,13 @@ int main (int argc, char** argv)
                    if(sector_number == k)
                    {
                    inliers_sector->indices.push_back(j);
-                   cout<<"one point matched"<<k<<"in"<<"with"<<theta<<endl;
+                   //cout<<"one point matched"<<k<<"in"<<"with"<<theta<<endl;
                    }
                  }
                  Sector sector;
                  sector.indices = inliers_sector;
                  sector.sector_number = k;
-                 if(inliers_sector->indices.size() > 30) sector.indicate = false;
+                 if(inliers_sector->indices.size() > 15) sector.indicate = false;
                  else sector.indicate = true;
                  sectors.push_back(sector);
                  //cout<<"size of the sector"<<sector.indices->indices.size()<<endl;
@@ -670,11 +681,46 @@ int main (int argc, char** argv)
 
 
            }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[0]->indices.size()<<endl;
            for(int i = 0; i < numberOfSectors; i++)
            {
-           cout<<"size of index in 5th sector of each plane" << Planes[1].sectors[i].indices->indices.size()<<endl;
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[0].sectors[i].indices->indices.size() << " index is "<<Planes[0].sectors[i].indicate<<endl;
            }
-
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[1]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[1].sectors[i].indices->indices.size()<<" index is "<<Planes[1].sectors[i].indicate<<endl;
+           }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[2]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[2].sectors[i].indices->indices.size()<<" index is "<<Planes[2].sectors[i].indicate<<endl;
+           }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[3]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[3].sectors[i].indices->indices.size()<<" index is "<<Planes[3].sectors[i].indicate<<endl;
+           }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[4]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[4].sectors[i].indices->indices.size()<<" index is "<<Planes[4].sectors[i].indicate<<endl;
+           }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[5]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[5].sectors[i].indices->indices.size()<<" index is "<<Planes[5].sectors[i].indicate<<endl;
+           }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[6]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[6].sectors[i].indices->indices.size()<<" index is "<<Planes[6].sectors[i].indicate<<endl;
+           }
+           cout<<"total_number of indices in plane 0" << plane_inliers_pointer[7]->indices.size()<<endl;
+           for(int i = 0; i < numberOfSectors; i++)
+           {
+           cout<<"size of indices in "<<i<<"th sector of each plane " << Planes[7].sectors[i].indices->indices.size()<<" index is "<<Planes[7].sectors[i].indicate<<endl;
+           }
            /*
            // Create the segmentation object
            pcl::SACSegmentation<pcl::PointXYZ> seg;
@@ -781,7 +827,7 @@ int main (int argc, char** argv)
            pcl::io::savePCDFile (ss4.str (), *cloud_inObstacle, true);
            cout<<"stop 3";
            */
-           hop.icp_status = false;
+           hop.icp_status = true;
 		   }
 
 
@@ -810,7 +856,7 @@ void storefilename_callback(const std_msgs::String& pcd_file_name)
   counter++;
 
   }
-  else ROS_INFO("SphereX hopped");
+  //else ROS_INFO("SphereX hopped");
   if(counter >= 8)
   {
     hop.hop_status=true;
