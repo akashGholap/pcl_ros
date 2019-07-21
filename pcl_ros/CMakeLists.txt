@@ -6,6 +6,7 @@ find_package(cmake_modules REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem thread)
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.4 REQUIRED)
+find_package(PythonLibs 2.7)
 find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
 
 if(NOT "${PCL_LIBRARIES}" STREQUAL "")
@@ -213,7 +214,8 @@ target_link_libraries(convert_pointcloud_to_image ${Boost_LIBRARIES} ${catkin_LI
 
 
 add_executable(icp_ros_runtime tools/icp_ros_runtime.cpp)
-target_link_libraries(icp_ros_runtime ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_include_directories(icp_ros_runtime PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(icp_ros_runtime ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## Downloads
 
